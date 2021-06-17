@@ -141,10 +141,15 @@ impl Snake
         }
     }
 
-    pub fn keep_tail(&mut self)
+    pub fn extend_tail(&mut self)
     {
         let t = self.tail.clone().unwrap();
         self.body.push_back(t);
+    }
+
+    pub fn facing(&self) -> Direction
+    {
+        self.dir
     }
 
     pub fn overlap_except_tail(&self, x: i32, y: i32) -> bool
