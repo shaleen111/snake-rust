@@ -1,10 +1,9 @@
 use std::collections::LinkedList;
-use piston_window::{Context, G2d};
-use piston_window::types::Color;
+use ggez::{Context, graphics::Color};
 
 use crate::draw::draw_block;
 
-const SNAKE_COLOR: Color = [0.0, 1.0, 0.0, 1.0];
+const SNAKE_COLOR: Color = Color::new(0.0, 1.0, 0.0, 1.0);
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum Direction
@@ -73,11 +72,11 @@ impl Snake
         }
     }
 
-    pub fn draw(&self, con: &Context, g: &mut G2d)
+    pub fn draw(&self, con: &mut Context)
     {
         for b in &self.body
         {
-            draw_block(b.x, b.y, SNAKE_COLOR, con, g);
+            draw_block(b.x, b.y, SNAKE_COLOR, con);
         }
     }
 

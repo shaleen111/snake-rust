@@ -1,14 +1,14 @@
-use piston_window::*;
-use piston_window::types::Color;
+// use piston_window::*;
+use ggez::{Context, graphics::Color, input::keyboard};
 
 use rand::{thread_rng, Rng};
 
 use crate::draw::{draw_block, draw_rect};
 use crate::snake::{Direction, Snake};
 
-const FOOD_COLOR: Color = [1.0, 0.0, 0.0, 1.0];
-const BORDER_COLOR: Color = [0.0, 0.0, 0.0, 1.0];
-const GAMEOVER_COLOR: Color = [1.0, 0.0, 0.0, 0.5];
+const FOOD_COLOR: Color = Color::new(1.0, 0.0, 0.0, 1.0);
+const BORDER_COLOR: Color = Color::new(0.0, 0.0, 0.0, 1.0);
+const GAMEOVER_COLOR: Color = Color::new(1.0, 0.0, 0.0, 0.5);
 
 const MOVING_PERIOD: f64 = 0.1;
 const RESTART_TIME: f64 = 1.0;
@@ -48,47 +48,54 @@ impl Game
         }
     }
 
-    pub fn key_pressed(&mut self, key: Key)
+    pub fn key_pressed(&mut self, key: keyboard::KeyCode, repeat: bool)
     {
-        if self.game_over
+        if self.game_over | repeat
         {
             return;
         }
 
         let dir = match key
         {
-            Key::W | Key::Up => Some(Direction::UP),
-            Key::S | Key::Down => Some(Direction::DOWN),
-            Key::A | Key::Left => Some(Direction::LEFT),
-            Key::D | Key::Right => Some(Direction::RIGHT),
+            keyboard::KeyCode::W | keyboard::KeyCode::Up => Some(Direction::UP),
+            keyboard::KeyCode::S | keyboard::KeyCode::Down => Some(Direction::DOWN),
+            keyboard::KeyCode::A | keyboard::KeyCode::Left => Some(Direction::LEFT),
+            keyboard::KeyCode::D | keyboard::KeyCode::Right => Some(Direction::RIGHT),
             _ => None,
         };
 
-        if dir.unwrap() == self.snake.facing().opposite()
+        if let Some(d) = dir
         {
-            return;
+            if d == self.snake.facing().opposite()
+            {
+                return;
+            }
+        }
+        else
+        {
+            return
         }
 
         self.update_snake(dir);
     }
 
-    pub fn draw(&self, con: &Context, g: &mut G2d)
+    pub fn draw(&self, con: &mut Context)
     {
-        self.snake.draw(con, g);
+        self.snake.draw(con);
 
         if self.food_exists
         {
-            draw_block(self.food_x, self.food_y, FOOD_COLOR, con, g);
+            draw_block(self.food_x, self.food_y, FOOD_COLOR, con);
         }
 
-        draw_rect(0, 0, self.width, 1, BORDER_COLOR, con, g);
-        draw_rect(0, 1, 1, self.height - 1, BORDER_COLOR, con, g);
-        draw_rect(self.width - 1, 1, 1, self.height - 1, BORDER_COLOR, con, g);
-        draw_rect(1, self.height - 1, self.width - 2, 1, BORDER_COLOR, con, g);
+        draw_rect(0, 0, self.width, 1, BORDER_COLOR, con);
+        draw_rect(0, 1, 1, self.height - 1, BORDER_COLOR, con);
+        draw_rect(self.width - 1, 1, 1, self.height - 1, BORDER_COLOR, con);
+        draw_rect(1, self.height - 1, self.width - 2, 1, BORDER_COLOR, con);
 
         if self.game_over
         {
-            draw_rect(0, 0, self.width, self.height, GAMEOVER_COLOR, con, g);
+            draw_rect(0, 0, self.width, self.height, GAMEOVER_COLOR, con);
         }
     }
 
