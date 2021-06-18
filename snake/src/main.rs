@@ -21,7 +21,7 @@ impl event::EventHandler for WindowState
 {
     fn update(&mut self, ctx: &mut ggez::Context) -> ggez::GameResult
     {
-        // self.game.update(timer::delta(ctx).as_secs_f64());
+        self.game.update(timer::delta(ctx).as_secs_f64());
         Ok(())
     }
 
@@ -29,8 +29,8 @@ impl event::EventHandler for WindowState
     {
         graphics::clear(ctx, BG_COLOR);
 
-        // self.game.draw(ctx);
-        draw_block(3, 4, Color::new(1.0, 0.0, 0.0, 1.0), ctx);
+        self.game.draw(ctx);
+        // draw_block(3, 4, Color::new(1.0, 0.0, 0.0, 1.0), ctx);
 
         graphics::present(ctx).expect("Error presenting.");
         Ok(())
@@ -43,12 +43,7 @@ impl event::EventHandler for WindowState
         {
             event::quit(ctx);
         }
-        // self.game.key_pressed(keycode, repeat);
-    }
-
-    fn resize_event(&mut self,_ctx: &mut ggez::Context, _width: f32, _height: f32)
-    {
-
+        self.game.key_pressed(keycode, repeat);
     }
 }
 
