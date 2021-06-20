@@ -1,8 +1,13 @@
-use ggez::{Context, graphics::Color, graphics::DrawMode, input::keyboard};
+use ggez::{Context,
+           graphics, graphics::Color, graphics::DrawMode,
+           graphics::DrawParam, graphics::Text, graphics::Font,
+           graphics::Scale,
+           audio::Source, audio::SoundSource,
+           input::keyboard};
 
 use rand::{thread_rng, Rng};
 
-use crate::draw::{draw_block, draw_rect, translate, reset_translate};
+use crate::draw::{to_coord, draw_block, draw_rect, translate, reset_translate};
 use crate::snake::{Direction, Snake};
 
 const FOOD_COLOR: Color = Color::new(1.0, 0.0, 0.0, 1.0);
@@ -14,6 +19,8 @@ const RESTART_TIME: f64 = 1.0;
 
 const SHAKE_DURATION: f64 = 0.25;
 const SHAKE_MAGNITUDE: f32 = 3.0;
+
+const FONT_SCALE: f32 = 200.0;
 
 pub struct Game
 {
@@ -29,31 +36,45 @@ pub struct Game
     shake_time: f64,
     shake_screen: bool,
 
+    score: Text,
+    score_font: Font,
+
+    // hit_sfx: Source,
+    // restart_sfx: Source,
+
     game_over: bool,
     waiting_time: f64,
 }
 
 impl Game
 {
-    pub fn new(width: i32, height: i32) -> Game
+    pub fn new(width: i32, height: i32, ctx: &mut Context) -> Game
     {
-        Game
-        {
-            snake: Snake::new(2, 2),
+        let mut g = Game
+                    {
+                        snake: Snake::new(2, 2),
 
-            food_exists: true,
-            food_x: 6,
-            food_y: 4,
+                        food_exists: true,
+                        food_x: 6,
+                        food_y: 4,
 
-            width,
-            height,
+                        width,
+                        height,
 
-            shake_time: 0.0,
-            shake_screen: false,
+                        shake_time: 0.0,
+                        shake_screen: false,
 
-            game_over: false,
-            waiting_time: 0.0,
-        }
+                        score: Text::new("0"),
+                        score_font: Font::new(ctx, "/Franchise.ttf").expect("Error loading font."),
+
+                        // hit_sfx: Source::new(ctx, "/hit.wav").expect("Error loading hit sfx."),
+                        // restart_sfx: Source::new(ctx, "/restart.wav").expect("Error loading restart sfx."),
+
+                        game_over: false,
+                        waiting_time: 0.0,
+                    };
+        g.score.set_font(g.score_font, Scale::uniform(FONT_SCALE));
+        g
     }
 
     pub fn key_pressed(&mut self, key: keyboard::KeyCode, repeat: bool)
@@ -91,6 +112,7 @@ impl Game
     {
         if self.shake_screen
         {
+            // self.hit_sfx.play_detached().expect("Error playing hit sfx.");
             if self.shake_time < SHAKE_DURATION
             {
                 let mut rng = thread_rng();
@@ -98,7 +120,7 @@ impl Game
                 let dx = rng.gen_range(-SHAKE_MAGNITUDE..=SHAKE_MAGNITUDE);
                 let dy = rng.gen_range(-SHAKE_MAGNITUDE..=SHAKE_MAGNITUDE);
 
-                translate(ctx, dx, dy);
+                translate(dx, dy, ctx);
             }
             else
             {
@@ -108,6 +130,8 @@ impl Game
             }
         }
 
+        self.draw_score(ctx);
+
         self.snake.draw(ctx);
 
         if self.food_exists
@@ -115,10 +139,7 @@ impl Game
             draw_block(self.food_x, self.food_y, FOOD_COLOR, ctx);
         }
 
-        draw_rect(0, 0, self.width, 1, BORDER_COLOR, ctx, DrawMode::fill());
-        draw_rect(0, 1, 1, self.height - 1, BORDER_COLOR, ctx, DrawMode::fill());
-        draw_rect(self.width - 1, 1, 1, self.height - 1, BORDER_COLOR, ctx, DrawMode::fill());
-        draw_rect(1, self.height - 1, self.width - 2, 1, BORDER_COLOR, ctx, DrawMode::fill());
+        self.draw_walls(ctx);
 
         if self.game_over
         {
@@ -126,9 +147,36 @@ impl Game
         }
     }
 
+    fn draw_walls(&self, ctx: &mut Context)
+    {
+        draw_rect(0, 0, self.width, 1, BORDER_COLOR, ctx, DrawMode::fill());
+        draw_rect(0, 1, 1, self.height - 1, BORDER_COLOR, ctx, DrawMode::fill());
+        draw_rect(self.width - 1, 1, 1, self.height - 1, BORDER_COLOR, ctx, DrawMode::fill());
+        draw_rect(1, self.height - 1, self.width - 2, 1, BORDER_COLOR, ctx, DrawMode::fill());
+    }
+
+    fn draw_score(&self, ctx: &mut Context)
+    {
+        let coord = [(to_coord(self.width) - self.score.width(ctx) as f32)/2.0,
+                     (to_coord(self.height) - self.score.height(ctx) as f32)/2.0];
+        graphics::draw(ctx, &self.score,
+                       DrawParam::default().dest(coord).color(BORDER_COLOR)).expect("Error drawing score.");
+    }
+
+    fn increment_score(&mut self)
+    {
+        let new_value = (self.score.contents().parse::<u32>().unwrap() + 1).to_string();
+        self.score = Text::new(new_value);
+        self.score.set_font(self.score_font, Scale::uniform(FONT_SCALE));
+    }
+
     pub fn update(&mut self, dt: f64)
     {
         self.waiting_time += dt;
+        if self.shake_screen
+        {
+            self.shake_time += dt;
+        }
 
         if self.game_over
         {
@@ -141,13 +189,7 @@ impl Game
 
         if !self.food_exists
         {
-            self.shake_screen = true;
             self.add_food();
-        }
-
-        if self.shake_screen
-        {
-            self.shake_time += dt;
         }
 
         if self.waiting_time > MOVING_PERIOD
@@ -156,18 +198,20 @@ impl Game
         }
     }
 
-    pub fn eat(&mut self)
+    fn eat(&mut self)
     {
         let (front_x, front_y) = self.snake.head();
 
         if front_x == self.food_x && front_y == self.food_y
         {
             self.food_exists = false;
+            self.shake_screen = true;
             self.snake.extend_tail();
+            self.increment_score();
         }
     }
 
-    pub fn is_snake_alive(&self, dir: Option<Direction>) -> bool
+    fn is_snake_alive(&self, dir: Option<Direction>) -> bool
     {
         let (next_x, next_y) = self.snake.next_direction(dir);
 
@@ -178,7 +222,7 @@ impl Game
         next_y < self.height - 1
     }
 
-    pub fn add_food(&mut self)
+    fn add_food(&mut self)
     {
         let mut rng = thread_rng();
 
@@ -196,7 +240,7 @@ impl Game
         self.food_y = new_y;
     }
 
-    pub fn update_snake(&mut self, dir: Option<Direction>)
+    fn update_snake(&mut self, dir: Option<Direction>)
     {
         if self.is_snake_alive(dir)
         {
@@ -206,11 +250,13 @@ impl Game
         else
         {
             self.game_over = true;
+            self.shake_screen = true;
+            self.shake_time = SHAKE_DURATION - RESTART_TIME - 0.1;
         }
         self.waiting_time = 0.0;
     }
 
-    pub fn restart(&mut self)
+    fn restart(&mut self)
     {
         self.snake = Snake::new(2,2);
         self.food_exists = true;
@@ -218,5 +264,7 @@ impl Game
         self.food_y = 4;
         self.game_over = false;
         self.waiting_time = 0.0;
+        self.score = Text::new("0");
+        self.score.set_font(self.score_font, Scale::uniform(FONT_SCALE));
     }
 }
