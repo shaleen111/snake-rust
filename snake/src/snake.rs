@@ -3,7 +3,7 @@ use ggez::{Context, graphics::Color};
 
 use crate::draw::draw_block;
 
-const SNAKE_COLOR: Color = Color::new(0.0, 1.0, 0.0, 1.0);
+const SNAKE_COLOR: Color = Color::new(0.3125, 0.859375, 0.390625, 1.0);
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum Direction
@@ -72,11 +72,11 @@ impl Snake
         }
     }
 
-    pub fn draw(&self, con: &mut Context)
+    pub fn draw(&self, ctx: &mut Context)
     {
         for b in &self.body
         {
-            draw_block(b.x, b.y, SNAKE_COLOR, con);
+            draw_block(b.x, b.y, SNAKE_COLOR, ctx);
         }
     }
 

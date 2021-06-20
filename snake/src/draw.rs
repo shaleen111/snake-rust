@@ -13,18 +13,31 @@ pub fn draw_rect( game_x: i32,
                   width: i32,
                   height: i32,
                   color: Color,
-                  ctx: &mut Context)
+                  ctx: &mut Context,
+                  mode: DrawMode)
 {
-    let actual_x: f32 = to_coord(game_x);
-    let actual_y: f32 = to_coord(game_y);
+    let actual_x = to_coord(game_x);
+    let actual_y = to_coord(game_y);
 
     let r = graphics::Rect::new(actual_x, actual_y, to_coord(width), to_coord(height));
-    let mesh_r = Mesh::new_rectangle(ctx, DrawMode::fill(), r, color).expect("Error making rectangle mesh.");
+    let mesh_r = Mesh::new_rectangle(ctx, mode, r, color).expect("Error making rectangle mesh.");
 
     graphics::draw(ctx, &mesh_r, DrawParam::default()).expect("Error trying to draw rectangle mesh.");
 }
 
 pub fn draw_block(game_x: i32, game_y: i32, color: Color, ctx: &mut Context)
 {
-    draw_rect(game_x, game_y, 1, 1, color, ctx);
+    draw_rect(game_x, game_y, 1, 1, color, ctx, DrawMode::stroke(5.0));
+}
+
+pub fn translate(ctx: &mut Context, x: f32, y: f32)
+{
+    let translation_matrix = DrawParam::new().dest(ggez::mint::Point2{x, y}).to_matrix();
+    graphics::push_transform(ctx, Some(translation_matrix));
+    graphics::apply_transformations(ctx).expect("Error applying transformation.");
+}
+
+pub fn reset_translate(ctx: &mut Context)
+{
+    translate(ctx, 0.0, 0.0);
 }

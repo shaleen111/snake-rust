@@ -1,17 +1,19 @@
-// use piston_window::*;
-use ggez::{Context, graphics::Color, input::keyboard};
+use ggez::{Context, graphics::Color, graphics::DrawMode, input::keyboard};
 
 use rand::{thread_rng, Rng};
 
-use crate::draw::{draw_block, draw_rect};
+use crate::draw::{draw_block, draw_rect, translate, reset_translate};
 use crate::snake::{Direction, Snake};
 
 const FOOD_COLOR: Color = Color::new(1.0, 0.0, 0.0, 1.0);
-const BORDER_COLOR: Color = Color::new(0.0, 0.0, 0.0, 1.0);
+const BORDER_COLOR: Color = Color::new(0.0, 0.0, 0.0, 0.8);
 const GAMEOVER_COLOR: Color = Color::new(1.0, 0.0, 0.0, 0.5);
 
 const MOVING_PERIOD: f64 = 0.1;
 const RESTART_TIME: f64 = 1.0;
+
+const SHAKE_DURATION: f64 = 0.25;
+const SHAKE_MAGNITUDE: f32 = 3.0;
 
 pub struct Game
 {
@@ -23,6 +25,9 @@ pub struct Game
 
     width: i32,
     height: i32,
+
+    shake_time: f64,
+    shake_screen: bool,
 
     game_over: bool,
     waiting_time: f64,
@@ -42,6 +47,9 @@ impl Game
 
             width,
             height,
+
+            shake_time: 0.0,
+            shake_screen: false,
 
             game_over: false,
             waiting_time: 0.0,
@@ -79,23 +87,42 @@ impl Game
         self.update_snake(dir);
     }
 
-    pub fn draw(&self, con: &mut Context)
+    pub fn draw(&mut self, ctx: &mut Context)
     {
-        self.snake.draw(con);
+        if self.shake_screen
+        {
+            if self.shake_time < SHAKE_DURATION
+            {
+                let mut rng = thread_rng();
+
+                let dx = rng.gen_range(-SHAKE_MAGNITUDE..=SHAKE_MAGNITUDE);
+                let dy = rng.gen_range(-SHAKE_MAGNITUDE..=SHAKE_MAGNITUDE);
+
+                translate(ctx, dx, dy);
+            }
+            else
+            {
+                reset_translate(ctx);
+                self.shake_screen = false;
+                self.shake_time = 0.0;
+            }
+        }
+
+        self.snake.draw(ctx);
 
         if self.food_exists
         {
-            draw_block(self.food_x, self.food_y, FOOD_COLOR, con);
+            draw_block(self.food_x, self.food_y, FOOD_COLOR, ctx);
         }
 
-        draw_rect(0, 0, self.width, 1, BORDER_COLOR, con);
-        draw_rect(0, 1, 1, self.height - 1, BORDER_COLOR, con);
-        draw_rect(self.width - 1, 1, 1, self.height - 1, BORDER_COLOR, con);
-        draw_rect(1, self.height - 1, self.width - 2, 1, BORDER_COLOR, con);
+        draw_rect(0, 0, self.width, 1, BORDER_COLOR, ctx, DrawMode::fill());
+        draw_rect(0, 1, 1, self.height - 1, BORDER_COLOR, ctx, DrawMode::fill());
+        draw_rect(self.width - 1, 1, 1, self.height - 1, BORDER_COLOR, ctx, DrawMode::fill());
+        draw_rect(1, self.height - 1, self.width - 2, 1, BORDER_COLOR, ctx, DrawMode::fill());
 
         if self.game_over
         {
-            draw_rect(0, 0, self.width, self.height, GAMEOVER_COLOR, con);
+            draw_rect(0, 0, self.width, self.height, GAMEOVER_COLOR, ctx, DrawMode::fill());
         }
     }
 
@@ -114,7 +141,13 @@ impl Game
 
         if !self.food_exists
         {
+            self.shake_screen = true;
             self.add_food();
+        }
+
+        if self.shake_screen
+        {
+            self.shake_time += dt;
         }
 
         if self.waiting_time > MOVING_PERIOD
