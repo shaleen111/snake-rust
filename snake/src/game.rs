@@ -1,9 +1,12 @@
-use ggez::{Context,
+use ggez::{audio::Source, audio::SoundSource,
+           Context,
+           event,
+           event::EventHandler,
            graphics, graphics::Color, graphics::DrawMode,
            graphics::DrawParam, graphics::Text, graphics::Font,
            graphics::Scale,
-           audio::Source, audio::SoundSource,
-           input::keyboard};
+           input::keyboard,
+           timer};
 
 use rand::{thread_rng, Rng};
 
@@ -21,6 +24,9 @@ const SHAKE_DURATION: f64 = 0.25;
 const SHAKE_MAGNITUDE: f32 = 3.0;
 
 const FONT_SCALE: f32 = 200.0;
+
+const BG_COLOR: Color = Color::new(0.5, 0.5, 0.5, 1.0);
+
 
 pub struct Game
 {
@@ -66,10 +72,10 @@ impl Game
                         shake_screen: false,
 
                         score: Text::new("0"),
-                        score_font: Font::new(ctx, "/Franchise.ttf").expect("Error loading font."),
+                        score_font: Font::new(ctx, "/fonts/Franchise.ttf").expect("Error loading font."),
 
-                        hit_sfx: Source::new(ctx, "/hit.wav").expect("Error loading hit sfx."),
-                        restart_sfx: Source::new(ctx, "/restart.wav").expect("Error loading restart sfx."),
+                        hit_sfx: Source::new(ctx, "/audio/hit.wav").expect("Error loading hit sfx."),
+                        restart_sfx: Source::new(ctx, "/audio/restart.wav").expect("Error loading restart sfx."),
                         restart_sfx_playing: false,
 
                         game_over: false,
@@ -77,80 +83,6 @@ impl Game
                     };
         g.score.set_font(g.score_font, Scale::uniform(FONT_SCALE));
         g
-    }
-
-    pub fn key_pressed(&mut self, key: keyboard::KeyCode, repeat: bool)
-    {
-        if self.game_over | repeat
-        {
-            return;
-        }
-
-        let dir = match key
-        {
-            keyboard::KeyCode::W | keyboard::KeyCode::Up => Some(Direction::UP),
-            keyboard::KeyCode::S | keyboard::KeyCode::Down => Some(Direction::DOWN),
-            keyboard::KeyCode::A | keyboard::KeyCode::Left => Some(Direction::LEFT),
-            keyboard::KeyCode::D | keyboard::KeyCode::Right => Some(Direction::RIGHT),
-            _ => None,
-        };
-
-        if let Some(d) = dir
-        {
-            if d == self.snake.facing().opposite()
-            {
-                return;
-            }
-        }
-        else
-        {
-            return
-        }
-
-        self.update_snake(dir);
-    }
-
-    pub fn draw(&mut self, ctx: &mut Context)
-    {
-        if self.shake_screen
-        {
-            if self.shake_time < SHAKE_DURATION
-            {
-                let mut rng = thread_rng();
-
-                let dx = rng.gen_range(-SHAKE_MAGNITUDE..=SHAKE_MAGNITUDE);
-                let dy = rng.gen_range(-SHAKE_MAGNITUDE..=SHAKE_MAGNITUDE);
-
-                translate(dx, dy, ctx);
-            }
-            else
-            {
-                reset_translate(ctx);
-                self.shake_screen = false;
-                self.shake_time = 0.0;
-            }
-        }
-
-        self.draw_score(ctx);
-
-        self.snake.draw(ctx);
-
-        if self.food_exists
-        {
-            draw_block(self.food_x, self.food_y, FOOD_COLOR, ctx);
-        }
-
-        self.draw_walls(ctx);
-
-        if self.game_over
-        {
-            if !self.restart_sfx_playing
-            {
-                self.restart_sfx.play().expect("Error playing restart sfx.");
-                self.restart_sfx_playing = true;
-            }
-            draw_rect(0, 0, self.width, self.height, GAMEOVER_COLOR, ctx, DrawMode::fill());
-        }
     }
 
     fn draw_walls(&self, ctx: &mut Context)
@@ -174,34 +106,6 @@ impl Game
         let new_value = (self.score.contents().parse::<u32>().unwrap() + 1).to_string();
         self.score = Text::new(new_value);
         self.score.set_font(self.score_font, Scale::uniform(FONT_SCALE));
-    }
-
-    pub fn update(&mut self, dt: f64)
-    {
-        self.waiting_time += dt;
-        if self.shake_screen
-        {
-            self.shake_time += dt;
-        }
-
-        if self.game_over
-        {
-            if self.waiting_time > RESTART_TIME
-            {
-                self.restart();
-            }
-            return;
-        }
-
-        if !self.food_exists
-        {
-            self.add_food();
-        }
-
-        if self.waiting_time > MOVING_PERIOD
-        {
-            self.update_snake(None);
-        }
     }
 
     fn eat(&mut self)
@@ -264,6 +168,7 @@ impl Game
     }
 
     fn restart(&mut self)
+
     {
         self.snake = Snake::new(2,2);
         self.food_exists = true;
@@ -274,5 +179,123 @@ impl Game
         self.score = Text::new("0");
         self.score.set_font(self.score_font, Scale::uniform(FONT_SCALE));
         self.restart_sfx_playing = false;
+    }
+}
+
+impl EventHandler for Game
+{
+    fn update(&mut self, ctx: &mut Context) -> ggez::GameResult
+    {
+        let dt = timer::delta(ctx).as_secs_f64();
+        self.waiting_time += dt;
+        if self.shake_screen
+        {
+            self.shake_time += dt;
+        }
+
+        if self.game_over
+        {
+            if self.waiting_time > RESTART_TIME
+            {
+                self.restart();
+            }
+            return Ok(());
+        }
+
+        if !self.food_exists
+        {
+            self.add_food();
+        }
+
+        if self.waiting_time > MOVING_PERIOD
+        {
+            self.update_snake(None);
+        }
+        Ok(())
+    }
+
+    fn draw(&mut self, ctx: &mut Context) -> ggez::GameResult
+    {
+        graphics::clear(ctx, BG_COLOR);
+
+        if self.shake_screen
+        {
+            if self.shake_time < SHAKE_DURATION
+            {
+                let mut rng = thread_rng();
+
+                let dx = rng.gen_range(-SHAKE_MAGNITUDE..=SHAKE_MAGNITUDE);
+                let dy = rng.gen_range(-SHAKE_MAGNITUDE..=SHAKE_MAGNITUDE);
+
+                translate(dx, dy, ctx);
+            }
+            else
+            {
+                reset_translate(ctx);
+                self.shake_screen = false;
+                self.shake_time = 0.0;
+            }
+        }
+
+        self.draw_score(ctx);
+
+        self.snake.draw(ctx);
+
+        if self.food_exists
+        {
+            draw_block(self.food_x, self.food_y, FOOD_COLOR, ctx);
+        }
+
+        self.draw_walls(ctx);
+
+        if self.game_over
+        {
+            if !self.restart_sfx_playing
+            {
+                self.restart_sfx.play().expect("Error playing restart sfx.");
+                self.restart_sfx_playing = true;
+            }
+            draw_rect(0, 0, self.width, self.height, GAMEOVER_COLOR, ctx, DrawMode::fill());
+        }
+
+        graphics::present(ctx).expect("Error presenting.");
+        Ok(())
+    }
+
+    fn key_down_event(&mut self, ctx: &mut Context, keycode: keyboard::KeyCode,
+                      _keymods: keyboard::KeyMods, repeat: bool)
+    {
+        if keycode == keyboard::KeyCode::Escape
+        {
+            event::quit(ctx);
+        }
+
+        if self.game_over | repeat
+        {
+            return;
+        }
+
+        let dir = match keycode
+        {
+            keyboard::KeyCode::W | keyboard::KeyCode::Up => Some(Direction::UP),
+            keyboard::KeyCode::S | keyboard::KeyCode::Down => Some(Direction::DOWN),
+            keyboard::KeyCode::A | keyboard::KeyCode::Left => Some(Direction::LEFT),
+            keyboard::KeyCode::D | keyboard::KeyCode::Right => Some(Direction::RIGHT),
+            _ => None,
+        };
+
+        if let Some(d) = dir
+        {
+            if d == self.snake.facing().opposite()
+            {
+                return;
+            }
+        }
+        else
+        {
+            return
+        }
+
+        self.update_snake(dir);
     }
 }

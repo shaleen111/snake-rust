@@ -2,49 +2,10 @@ mod draw;
 mod snake;
 mod game;
 
-use ggez::{Context, ContextBuilder, event, conf,
-           graphics, graphics::Color,
-           input::keyboard,
-           timer};
+use ggez::{conf, ContextBuilder, graphics};
 
 use crate::draw::to_coord;
 use crate::game::Game;
-
-const BG_COLOR: Color = Color::new(0.5, 0.5, 0.5, 1.0);
-
-struct WindowState
-{
-    game: Game,
-}
-
-impl event::EventHandler for WindowState
-{
-    fn update(&mut self, ctx: &mut Context) -> ggez::GameResult
-    {
-        self.game.update(timer::delta(ctx).as_secs_f64());
-        Ok(())
-    }
-
-    fn draw(&mut self, ctx: &mut Context) -> ggez::GameResult
-    {
-        graphics::clear(ctx, BG_COLOR);
-
-        self.game.draw(ctx);
-
-        graphics::present(ctx).expect("Error presenting.");
-        Ok(())
-    }
-
-    fn key_down_event(&mut self, ctx: &mut Context, keycode: keyboard::KeyCode,
-                      _keymods: keyboard::KeyMods, repeat: bool)
-    {
-        if keycode == keyboard::KeyCode::Escape
-        {
-            event::quit(ctx);
-        }
-        self.game.key_pressed(keycode, repeat);
-    }
-}
 
 fn main()
 {
@@ -55,8 +16,8 @@ fn main()
                             .build()
                             .expect("Error building context.");
 
-    let mut window_state = WindowState{game: Game::new(width, height, &mut ctx)};
+    let mut game = Game::new(width, height, &mut ctx);
 
     graphics::set_window_title(&mut ctx, "Game");
-    ggez::event::run(&mut ctx, &mut event_loop, &mut window_state).expect("Error running.");
+    ggez::event::run(&mut ctx, &mut event_loop, &mut game).expect("Error running.");
 }
