@@ -39,8 +39,9 @@ pub struct Game
     score: Text,
     score_font: Font,
 
-    // hit_sfx: Source,
-    // restart_sfx: Source,
+    hit_sfx: Source,
+    restart_sfx: Source,
+    restart_sfx_playing: bool,
 
     game_over: bool,
     waiting_time: f64,
@@ -67,8 +68,9 @@ impl Game
                         score: Text::new("0"),
                         score_font: Font::new(ctx, "/Franchise.ttf").expect("Error loading font."),
 
-                        // hit_sfx: Source::new(ctx, "/hit.wav").expect("Error loading hit sfx."),
-                        // restart_sfx: Source::new(ctx, "/restart.wav").expect("Error loading restart sfx."),
+                        hit_sfx: Source::new(ctx, "/hit.wav").expect("Error loading hit sfx."),
+                        restart_sfx: Source::new(ctx, "/restart.wav").expect("Error loading restart sfx."),
+                        restart_sfx_playing: false,
 
                         game_over: false,
                         waiting_time: 0.0,
@@ -112,7 +114,6 @@ impl Game
     {
         if self.shake_screen
         {
-            // self.hit_sfx.play_detached().expect("Error playing hit sfx.");
             if self.shake_time < SHAKE_DURATION
             {
                 let mut rng = thread_rng();
@@ -143,6 +144,11 @@ impl Game
 
         if self.game_over
         {
+            if !self.restart_sfx_playing
+            {
+                self.restart_sfx.play().expect("Error playing restart sfx.");
+                self.restart_sfx_playing = true;
+            }
             draw_rect(0, 0, self.width, self.height, GAMEOVER_COLOR, ctx, DrawMode::fill());
         }
     }
@@ -204,6 +210,7 @@ impl Game
 
         if front_x == self.food_x && front_y == self.food_y
         {
+            self.hit_sfx.play().expect("Error playing hit sfx.");
             self.food_exists = false;
             self.shake_screen = true;
             self.snake.extend_tail();
@@ -266,5 +273,6 @@ impl Game
         self.waiting_time = 0.0;
         self.score = Text::new("0");
         self.score.set_font(self.score_font, Scale::uniform(FONT_SCALE));
+        self.restart_sfx_playing = false;
     }
 }
