@@ -1,4 +1,6 @@
-# Snake
+<h1 align="center">
+Snake
+</h1>
 
 [![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/tterb/atomic-design-ui/blob/master/LICENSEs)
 
@@ -24,11 +26,13 @@ Install my-project with git and cargo (cargo and rust can both be installed usin
     cd snake
     cargo build --release
 ```
+
 ## Usage/Examples
 
 ```
   cargo run
 ```
+
 ## Roadmap
 
 - [x]  Core Gameplay
