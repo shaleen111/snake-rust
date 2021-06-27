@@ -3,7 +3,7 @@ Snake
 </h1>
 
 <p align="center">
-          <a href="https://github.com/shaleen111/snake-rust/blob/master/LICENSEs">
+          <a href="https://github.com/shaleen111/snake-rust/blob/master/LICENSE.md">
                     <img src="https://img.shields.io/apm/l/atomic-design-ui.svg?" alt="MIT License" />
           </a>
 </p>
