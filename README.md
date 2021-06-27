@@ -2,7 +2,11 @@
 Snake
 </h1>
 
-[![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/tterb/atomic-design-ui/blob/master/LICENSEs)
+<p align="center">
+          <a href="https://github.com/shaleen111/snake-rust/blob/master/LICENSEs">
+                    <img src="https://img.shields.io/apm/l/atomic-design-ui.svg?" alt="MIT License" />
+          </a>
+</p>
 
 A simple (but polished) implementation of the Snake game in Rust.
 Made with the intention of getting used to Rust as well as the graphics libraries available for it.
