@@ -4,7 +4,7 @@ Snake
 
 <p align="center">
           <a href="https://github.com/shaleen111/snake-rust/blob/master/LICENSE.md">
-                    <img src="https://img.shields.io/apm/l/atomic-design-ui.svg?" alt="MIT License" />
+                    <img src="https://img.shields.io/badge/license-MIT-brightgreen" alt="MIT License" />
           </a>
 </p>
 
@@ -24,7 +24,7 @@ Made with the intention of getting used to Rust as well as the graphics librarie
 
 ## Installation
 
-Install my-project with git and cargo (cargo and rust can both be installed using rustup)
+Install my project with git and cargo (cargo and rust can both be installed using rustup)
 ```bash
     git clone https://github.com/shaleen111/snake-rust.git
     cd snake
