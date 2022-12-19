@@ -18,8 +18,8 @@ Made with the intention of getting used to Rust as well as the graphics librarie
 
 ## Tested On
 
-- [ ]  Windows
-- [ ]  macOS
+- [x]  Windows
+- [x]  macOS
 - [x]  Linux (Pop!_OS 20.04 LTS)
 
 ## Installation
